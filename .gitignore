@@ -1,0 +1,18 @@
+# Godot and .NET generated files
+.godot/
+.mono/
+bin/
+obj/
+
+# Local editor state
+.vs/
+.idea/
+*.user
+*.suo
+
+# Local environment and operating system files
+.env
+.env.*
+.DS_Store
+Thumbs.db
+Desktop.ini
