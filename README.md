@@ -1,6 +1,6 @@
 # MaxGodotFrame
 
-Godot .NET 通用 C# 基础插件，范围仅为 RNG 与声音。当前 `0.2.0` 提供可恢复的随机源；声音尚未实现。运行时无需启用编辑器插件。
+Godot .NET 通用 C# 基础插件，范围仅为 RNG 与声音。当前 `0.3.0` 提供可恢复随机源、音乐与音效播放。运行时无需启用编辑器插件。
 
 ## 安装与编译
 
@@ -31,11 +31,30 @@ assert(rng.NextInt(10) == value)
 
 包装种子使用有符号 `long` 的完整位模式；状态用 `PackedByteArray`，避免 unsigned Variant 转换。`RestoreState` 对无效输入报告 Godot 错误并返回 `false`。同一实例不支持并发调用；不同实例互不干扰。本模块不持有全局随机状态，不实现存档文件、业务洗牌、随机流用途或游戏事件。
 
+## 声音接口
+
+[FrameAudio](runtime/FrameAudio.cs) 继承 `Node`，加入场景树后使用：
+
+- `PlayMusic(AudioStream stream)`：返回音乐播放器；相同正在播放的资源保持进度。循环由传入资源的循环选项决定。
+- `PlayEffect(AudioStream stream, bool pauseWithTree)`：返回独立音效播放器；`true` 随场景树暂停，`false` 可供暂停界面试听。C# 可省略第二参数（默认 `true`），GDScript 必须显式传入。
+- `MusicBus`、`EffectsBus` 默认为 `Master`；宿主可指定已存在的总线。节点不创建总线或修改项目配置。
+- `MaxVoices` 默认 8，实际限制在 1—32；达到上限时停止最早音效。`GetVoiceCount()` 返回当前音效数量。
+- `PauseMusic(bool paused)` 暂停／恢复音乐；`StopMusic()`、`StopEffects()`、`StopAll()` 停止对应播放并释放资源引用。音乐默认不随场景树暂停。
+
+```gdscript
+var audio = load("res://addons/max_godot_frame/runtime/FrameAudio.cs").new()
+add_child(audio)
+audio.PlayMusic(preload("res://music.wav"))
+audio.PlayEffect(preload("res://click.wav"), false)
+```
+
+宿主提供音频资源、音量、后台静音、播放时机和偏好保存；声音不读取 RNG。提前停止音频并留出一个混音周期再退出引擎，可让音频线程释放循环流。
+
 ## 验证与边界
 
 在独立宿主中验证 C# 编译、GDScript 创建／状态恢复、编辑器启停和 ExportRelease 构建；另以纯 C# 验证参考序列、实例隔离、边界范围及无效状态。禁用编辑器入口不影响运行时随机源。
 
-后续声音仅提供通用播放能力，宿主负责选择音频、设置、调用时机及文件保存。不增加存储、设置或日志模块，不依赖其他插件、具体游戏或平台。
+声音另在独立及共同宿主验证 GDScript 调用、音乐／音效路由、暂停、试听、并发上限和停止，确认不新增音频总线。不增加存储、设置或日志模块，不依赖其他插件、具体游戏或平台。
 
 ## 许可
 
